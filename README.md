@@ -169,7 +169,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
----
+```
 
 ## Project Structure
 helm-bi/
@@ -202,7 +202,7 @@ helm-bi/
 ├── .env.local                      # Environment variables
 └── .env.example                    # Environment template
 
----
+```
 
 ## Roadmap
 
@@ -217,6 +217,7 @@ helm-bi/
 - [x] Health scores page — score bars, factor breakdown
 - [x] Settings page — platform connections, sync toggles
 - [x] GitHub branching strategy (feature → dev → main)
+- [x] Branch protection rules configured
 
 ### 🔲 In Progress
 - [ ] QuickSight API integration (real data)
