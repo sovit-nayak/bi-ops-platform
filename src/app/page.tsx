@@ -690,6 +690,11 @@ function CinematicDashboard() {
 }
 
 export default function LandingPage() {
+  useEffect(() => {
+    document.documentElement.style.zoom = "1.25";
+    return () => { document.documentElement.style.zoom = ""; };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden">
 
