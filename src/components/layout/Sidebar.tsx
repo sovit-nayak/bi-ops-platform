@@ -32,7 +32,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600">
           <Zap className="w-4 h-4 text-white" />
         </div>
-        <span className="text-white font-semibold text-lg">BIops</span>
+        <span className="text-white font-semibold text-lg">Helm</span>
         <span className="ml-auto text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded-full">
           Beta
         </span>
