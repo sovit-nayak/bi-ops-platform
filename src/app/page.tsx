@@ -777,9 +777,11 @@ export default function LandingPage() {
           <a href="#pricing" className="hover:text-white transition-colors cursor-pointer">Pricing</a>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/overview" className="text-sm text-gray-500 hover:text-white transition-colors">Sign in</Link>
-          <Link href="/overview" className="text-sm bg-white text-black px-4 py-1.5 rounded-lg font-medium hover:bg-gray-100 transition-colors">
-            Get started →
+          <Link href="/login" className="text-sm text-gray-500 hover:text-white transition-colors">
+            Login
+          </Link>
+          <Link href="/signup" className="text-sm bg-white text-black px-4 py-1.5 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+            Signup
           </Link>
         </div>
       </nav>
