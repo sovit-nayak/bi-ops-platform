@@ -1,5 +1,5 @@
 "use client";
-
+import Logo from "@/components/brand/logo";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from "framer-motion";
@@ -12,6 +12,7 @@ import {
   CheckCircle, Zap, Shield, RefreshCw, PieChart as PieIcon,
   Layout, AlertTriangle, TrendingUp, TrendingDown,
 } from "lucide-react";
+
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
@@ -266,11 +267,19 @@ function CinematicDashboard() {
           {/* Sidebar */}
           <div className="w-44 border-r border-white/[0.05] p-3 space-y-0.5 shrink-0">
             <div className="flex items-center gap-2 px-3 py-2 mb-3">
-              <div className="w-5 h-5 rounded bg-orange-500 flex items-center justify-center">
-                <Zap className="w-3 h-3 text-white" />
+                <div className="w-5 h-5 rounded bg-orange-500 flex items-center justify-center shadow-sm shadow-orange-500/30">
+                  <svg width="11" height="11" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="5" y1="4" x2="5" y2="14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                    <line x1="13" y1="4" x2="13" y2="14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                    <line x1="5" y1="9" x2="13" y2="9" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                    <circle cx="5" cy="4" r="1.5" fill="white"/>
+                    <circle cx="13" cy="4" r="1.5" fill="white"/>
+                    <circle cx="5" cy="14" r="1.5" fill="white"/>
+                    <circle cx="13" cy="14" r="1.5" fill="white"/>
+                  </svg>
+                </div>
+                <span className="text-white text-xs font-semibold">Helm</span>
               </div>
-              <span className="text-white text-xs font-semibold">Helm</span>
-            </div>
             {navItems.map((item, i) => (
               <motion.div
                 key={item}
@@ -761,12 +770,7 @@ export default function LandingPage() {
 
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 border-b border-white/[0.05] backdrop-blur-2xl bg-[#050505]/80">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
-            <Zap className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="font-semibold text-white tracking-tight">Helm</span>
-        </div>
+        <Logo href="/" size="sm" showWordmark />
         <div className="flex items-center gap-8 text-sm text-gray-500">
           <a href="#features" className="hover:text-white transition-colors cursor-pointer">Features</a>
           <a href="#platforms" className="hover:text-white transition-colors cursor-pointer">Platforms</a>
@@ -1145,12 +1149,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.05] py-8 px-8 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-orange-500 flex items-center justify-center">
-            <Zap className="w-3 h-3 text-white" />
-          </div>
-          <span className="text-sm text-gray-500 font-medium">Helm</span>
-        </div>
+        <Logo href="/" size="sm" showWordmark />
         <p className="text-sm text-gray-700">© 2026 Helm. Built by BI, for BI.</p>
         <div className="flex items-center gap-6 text-sm text-gray-700">
           <Link href="#" className="hover:text-gray-400 transition-colors">Privacy</Link>
