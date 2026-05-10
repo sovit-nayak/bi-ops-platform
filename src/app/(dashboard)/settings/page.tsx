@@ -1,64 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  CheckCircle, XCircle, RefreshCw, Plus,
+  CheckCircle, XCircle, RefreshCw, Plus, Eye, EyeOff,
   PieChart, BarChart3, Activity, Layout, Database,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-const platforms = [
-  {
-    id: 1,
-    name: "Amazon QuickSight",
-    icon: PieChart,
-    color: "text-orange-400",
-    bg: "bg-orange-400/10",
-    border: "border-orange-400/20",
-    glow: "from-orange-500/10 to-orange-500/5",
-    status: "connected",
-    lastSync: "5 minutes ago",
-    assets: { dashboards: 48, datasets: 124, users: 52 },
-    region: "us-east-1",
-  },
-  {
-    id: 2,
-    name: "Tableau",
-    icon: BarChart3,
-    color: "text-blue-400",
-    bg: "bg-blue-400/10",
-    border: "border-blue-400/20",
-    glow: "from-blue-500/10 to-blue-500/5",
-    status: "disconnected",
-    lastSync: "Never",
-    assets: { dashboards: 0, datasets: 0, users: 0 },
-    region: null,
-  },
-  {
-    id: 3,
-    name: "Power BI",
-    icon: Activity,
-    color: "text-yellow-400",
-    bg: "bg-yellow-400/10",
-    border: "border-yellow-400/20",
-    glow: "from-yellow-500/10 to-yellow-500/5",
-    status: "disconnected",
-    lastSync: "Never",
-    assets: { dashboards: 0, datasets: 0, users: 0 },
-    region: null,
-  },
-  {
-    id: 4,
-    name: "Looker",
-    icon: Layout,
-    color: "text-green-400",
-    bg: "bg-green-400/10",
-    border: "border-green-400/20",
-    glow: "from-green-500/10 to-green-500/5",
-    status: "disconnected",
-    lastSync: "Never",
-    assets: { dashboards: 0, datasets: 0, users: 0 },
-    region: null,
-  },
+const PLATFORMS = [
+  { id: "metabase", name: "Metabase", icon: Database, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", glow: "from-blue-500/10 to-blue-500/5", urlLabel: "Metabase URL", urlPlaceholder: "http://localhost:3001" },
+  { id: "quicksight", name: "QuickSight", icon: PieChart, color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20", glow: "from-orange-500/10 to-orange-500/5", urlLabel: "AWS Account ID", urlPlaceholder: "123456789012" },
+  { id: "tableau", name: "Tableau", icon: BarChart3, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", glow: "from-blue-500/10 to-blue-500/5", urlLabel: "Tableau Server URL", urlPlaceholder: "https://tableau.yourcompany.com" },
+  { id: "looker", name: "Looker", icon: Layout, color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/20", glow: "from-green-500/10 to-green-500/5", urlLabel: "Looker URL", urlPlaceholder: "https://yourcompany.looker.com" },
+  { id: "powerbi", name: "Power BI", icon: Activity, color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20", glow: "from-yellow-500/10 to-yellow-500/5", urlLabel: "Tenant ID", urlPlaceholder: "your-tenant-id" },
 ];
 
 const syncSettings = [
@@ -68,14 +22,137 @@ const syncSettings = [
   { label: "Stale Asset Alerts", desc: "Alert when dashboards haven't been viewed in 90 days", enabled: true },
 ];
 
+interface Connection {
+  id: string;
+  platform: string;
+  url: string;
+  is_active: boolean;
+}
+
+interface ConnectFormProps {
+  platform: typeof PLATFORMS[0];
+  onConnected: () => void;
+  onCancel: () => void;
+}
+
+function ConnectForm({ platform, onConnected, onCancel }: ConnectFormProps) {
+  const [url, setUrl] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const supabase = createClient();
+
+  const handleConnect = async () => {
+    if (!url || !apiKey) {
+      setError("Both fields are required");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError("Not logged in");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("platform_connections")
+      .insert({
+        user_id: user.id,
+        platform: platform.id,
+        url,
+        api_key: apiKey,
+        is_active: true,
+      });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    onConnected();
+  };
+
+  return (
+    <div className="mt-4 p-4 bg-white/[0.02] border border-white/[0.08] rounded-xl space-y-3">
+      <div>
+        <label className="text-xs text-gray-500 font-medium mb-1.5 block">{platform.urlLabel}</label>
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder={platform.urlPlaceholder}
+          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-orange-500/40 transition-all"
+        />
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 font-medium mb-1.5 block">API Key</label>
+        <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 focus-within:border-orange-500/40 transition-all">
+          <input
+            type={showKey ? "text" : "password"}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="••••••••••••••••"
+            className="bg-transparent text-sm text-white placeholder-gray-600 outline-none w-full"
+          />
+          <button onClick={() => setShowKey(!showKey)} className="text-gray-600 hover:text-gray-400">
+            {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={handleConnect}
+          disabled={loading}
+          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-xl transition-all"
+        >
+          {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-4 h-4" />}
+          {loading ? "Connecting..." : "Connect"}
+        </button>
+        <button onClick={onCancel} className="text-sm text-gray-500 hover:text-white transition-colors px-3 py-2">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [expandedForm, setExpandedForm] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [toggles, setToggles] = useState(syncSettings.map(s => s.enabled));
+  const supabase = createClient();
 
-  const handleSync = () => {
-    setSyncing(true);
-    setTimeout(() => setSyncing(false), 2000);
+  const loadConnections = async () => {
+    const { data } = await supabase
+      .from("platform_connections")
+      .select("*")
+      .eq("is_active", true);
+    setConnections(data || []);
   };
+
+  useEffect(() => { loadConnections(); }, []);
+
+  const handleDisconnect = async (id: string) => {
+    await supabase
+      .from("platform_connections")
+      .update({ is_active: false })
+      .eq("id", id);
+    loadConnections();
+  };
+
+  const isConnected = (platformId: string) =>
+    connections.some(c => c.platform === platformId);
+
+  const getConnection = (platformId: string) =>
+    connections.find(c => c.platform === platformId);
 
   return (
     <div className="space-y-6 min-h-screen bg-[#050505] p-6">
@@ -84,7 +161,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">Settings</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Manage your BI platform connections and sync preferences
+          Manage your BI platform connections
         </p>
       </div>
 
@@ -95,77 +172,85 @@ export default function SettingsPage() {
           Platform Connections
         </h2>
 
-        {platforms.map((platform) => (
-          <div
-            key={platform.id}
-            className={`relative rounded-2xl border backdrop-blur-sm overflow-hidden ${
-              platform.status === "connected"
-                ? `border-${platform.border} bg-gradient-to-br ${platform.glow}`
-                : "border-white/[0.06] bg-white/[0.02]"
-            }`}
-          >
-            {platform.status === "connected" && (
-              <div className={`absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br ${platform.glow} blur-2xl opacity-50`} />
-            )}
+        {PLATFORMS.map((platform) => {
+          const connected = isConnected(platform.id);
+          const connection = getConnection(platform.id);
+          const showForm = expandedForm === platform.id;
 
-            <div className="relative flex items-center justify-between p-5">
-              {/* Left */}
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${platform.bg} border ${platform.border}`}>
-                  <platform.icon className={`w-6 h-6 ${platform.color}`} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-medium">{platform.name}</span>
-                    {platform.status === "connected" ? (
-                      <div className="flex items-center gap-1 text-green-400 bg-green-400/10 border border-green-400/20 px-2 py-0.5 rounded-full">
-                        <CheckCircle className="w-3 h-3" />
-                        <span className="text-xs">Connected</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 text-gray-500 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full">
-                        <XCircle className="w-3 h-3" />
-                        <span className="text-xs">Not Connected</span>
-                      </div>
-                    )}
+          return (
+            <div
+              key={platform.id}
+              className={`relative rounded-2xl border backdrop-blur-sm overflow-hidden ${
+                connected
+                  ? `bg-gradient-to-br ${platform.glow} ${platform.border}`
+                  : "border-white/[0.06] bg-white/[0.02]"
+              }`}
+            >
+              <div className="relative flex items-center justify-between p-5">
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-xl ${platform.bg} border ${platform.border}`}>
+                    <platform.icon className={`w-6 h-6 ${platform.color}`} />
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Last synced: {platform.lastSync}
-                    {platform.region && ` · ${platform.region}`}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-medium">{platform.name}</span>
+                      {connected ? (
+                        <div className="flex items-center gap-1 text-green-400 bg-green-400/10 border border-green-400/20 px-2 py-0.5 rounded-full">
+                          <CheckCircle className="w-3 h-3" />
+                          <span className="text-xs">Connected</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-gray-500 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-full">
+                          <XCircle className="w-3 h-3" />
+                          <span className="text-xs">Not connected</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {connected ? connection?.url : "Click Connect to add credentials"}
+                    </p>
+                  </div>
                 </div>
+
+                {connected ? (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => { setSyncing(true); setTimeout(() => setSyncing(false), 2000); }}
+                      className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-gray-300 text-sm px-4 py-2 rounded-xl transition-all"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+                      Sync
+                    </button>
+                    <button
+                      onClick={() => handleDisconnect(connection!.id)}
+                      className="text-sm text-red-400 hover:text-red-300 bg-red-400/10 border border-red-400/20 px-4 py-2 rounded-xl transition-all"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setExpandedForm(showForm ? null : platform.id)}
+                    className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm px-4 py-2 rounded-xl transition-all shadow-lg shadow-orange-500/20"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Connect
+                  </button>
+                )}
               </div>
 
-              {/* Right */}
-              {platform.status === "connected" ? (
-                <div className="flex items-center gap-6">
-                  {[
-                    { val: platform.assets.dashboards, label: "Dashboards" },
-                    { val: platform.assets.datasets, label: "Datasets" },
-                    { val: platform.assets.users, label: "Users" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center">
-                      <div className="text-white font-bold">{stat.val}</div>
-                      <div className="text-xs text-gray-500">{stat.label}</div>
-                    </div>
-                  ))}
-                  <button
-                    onClick={handleSync}
-                    className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/10 text-gray-300 text-sm px-4 py-2 rounded-xl transition-all"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-                    {syncing ? "Syncing..." : "Sync Now"}
-                  </button>
+              {showForm && !connected && (
+                <div className="px-5 pb-5">
+                  <ConnectForm
+                    platform={platform}
+                    onConnected={() => { loadConnections(); setExpandedForm(null); }}
+                    onCancel={() => setExpandedForm(null)}
+                  />
                 </div>
-              ) : (
-                <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm px-4 py-2 rounded-xl transition-all shadow-lg shadow-orange-500/20">
-                  <Plus className="w-4 h-4" />
-                  Connect
-                </button>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Sync Settings */}
@@ -176,10 +261,7 @@ export default function SettingsPage() {
         </h2>
         <div className="space-y-1">
           {syncSettings.map((setting, i) => (
-            <div
-              key={setting.label}
-              className="flex items-center justify-between py-3.5 border-b border-white/[0.04] last:border-0"
-            >
+            <div key={setting.label} className="flex items-center justify-between py-3.5 border-b border-white/[0.04] last:border-0">
               <div>
                 <div className="text-white text-sm font-medium">{setting.label}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{setting.desc}</div>
@@ -190,13 +272,9 @@ export default function SettingsPage() {
                   next[i] = !next[i];
                   setToggles(next);
                 }}
-                className={`w-10 h-6 rounded-full flex items-center px-1 transition-all ${
-                  toggles[i] ? "bg-orange-500" : "bg-white/[0.08]"
-                }`}
+                className={`w-10 h-6 rounded-full flex items-center px-1 transition-all ${toggles[i] ? "bg-orange-500" : "bg-white/[0.08]"}`}
               >
-                <div className={`w-4 h-4 bg-white rounded-full transition-all ${
-                  toggles[i] ? "translate-x-4" : "translate-x-0"
-                }`} />
+                <div className={`w-4 h-4 bg-white rounded-full transition-all ${toggles[i] ? "translate-x-4" : "translate-x-0"}`} />
               </button>
             </div>
           ))}
@@ -211,13 +289,11 @@ export default function SettingsPage() {
         </h2>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-white text-sm font-medium">Reset All Data</div>
-            <div className="text-xs text-gray-500 mt-0.5">
-              Clear all synced metadata and start fresh
-            </div>
+            <div className="text-white text-sm font-medium">Reset All Connections</div>
+            <div className="text-xs text-gray-500 mt-0.5">Disconnect all platforms and clear synced data</div>
           </div>
           <button className="text-sm text-red-400 border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-xl transition-all">
-            Reset Data
+            Reset
           </button>
         </div>
       </div>
